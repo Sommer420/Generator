@@ -44,6 +44,8 @@ public class GeneratorType {
 
     private final double upgradePrice;
 
+    private final int stage;
+
     private final long defaultTicksBetweenDrop;
 
     public void addGeneratorDrop(double sellPrice, ItemStack dropItem) {

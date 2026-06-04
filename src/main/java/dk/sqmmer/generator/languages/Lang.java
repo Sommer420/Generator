@@ -141,7 +141,7 @@ public class Lang {
         ADMIN_CMD_ADD_GENDROP = getString(lang, "admin-cmd-add-gendrop", "&7Du har tilføjet et generatordrop til generatoren: %TYPE%.");
         ADMIN_CMD_REMOVE_GEN = getString(lang, "admin-cmd-remove-gen", "&7Du har fjernet generatoren %TYPE%.");
         ADMIN_CMD_REMOVE_GENDROP = getString(lang, "admin-cmd-remove-gendrop", "&7Du har fjernet et generator drop fra generatoren %TYPE%.");
-        ADMIN_CMD_ADD_GEN_MISSING_ARGS = getString(lang, "admin-cmd-add-gen-missing-args", "&7Brug &c/gadmin addgen <navn> <opgraderingspris> [næste gen]");
+        ADMIN_CMD_ADD_GEN_MISSING_ARGS = getString(lang, "admin-cmd-add-gen-missing-args", "&7Brug &c/ga addgen <navn> <opgraderingspris> <stadie> [næste gen]");
         ADMIN_CMD_ADD_GEN_HOLD_GEN = getString(lang, "admin-cmd-add-gen-hold_gen", "&7Du skal holde en blok i hånden!");
         ADMIN_CMD_ADD_GENDROP_MISSING_ARGS = getString(lang, "admin-cmd-add-gendrop-missing-args", "&7Brug &c/gadmin addgendrop <generator navn> <sælgpris>");
         ADMIN_CMD_ADD_GENDROP_HOLD_GENDROP = getString(lang, "admin-cmd-add-gendrop-hold_gendrop", "&7Du skal holde et item i hånden!");
