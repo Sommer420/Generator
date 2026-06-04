@@ -27,8 +27,10 @@ import dk.sqmmer.generator.Main;
 import dk.sqmmer.generator.languages.Lang;
 import dk.sqmmer.generator.utils.StringUtil;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
@@ -39,50 +41,67 @@ public class ShopListener implements Listener {
         Bukkit.getPluginManager().registerEvents(this, Main.getInstance());
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)
     public void onInventoryClick(InventoryClickEvent event) {
         if (!(event.getWhoClicked() instanceof Player)) return;
         if (!isShopTitle(event.getView().getTitle())) return;
 
         event.setCancelled(true);
-        if (event.getRawSlot() < 0 || event.getRawSlot() >= event.getView().getTopInventory().getSize()) return;
 
         Player player = (Player) event.getWhoClicked();
+        Bukkit.getScheduler().runTask(Main.getInstance(), player::updateInventory);
+
+        if (event.getRawSlot() < 0 || event.getRawSlot() >= event.getView().getTopInventory().getSize()) return;
+
         ShopHandler handler = ShopHandler.getInstance();
         if (handler == null || handler.getShopConfig() == null) return;
 
         String title = event.getView().getTitle();
-        if (title.equals(StringUtil.colorize(Lang.SHOP_GUI_TITLE + " - Kategorier"))) {
+        if (isCategoryTitle(title)) {
             int stage = Shop.getStageFromSlot(event.getRawSlot());
             if (stage != -1) {
-                Shop.openGenerators(handler, player, stage);
+                Bukkit.getScheduler().runTask(Main.getInstance(), () -> Shop.openGenerators(handler, player, stage));
                 return;
             }
             if (event.getRawSlot() == 31) {
-                Shop.openSpecialGenerators(handler, player);
+                Bukkit.getScheduler().runTask(Main.getInstance(), () -> Shop.openSpecialGenerators(handler, player));
             }
             return;
         }
 
         if (event.getRawSlot() == 49) {
-            Shop.openCategorySelector(handler, player);
+            Bukkit.getScheduler().runTask(Main.getInstance(), () -> Shop.openCategorySelector(handler, player));
             return;
         }
 
         if (event.getInventory().getHolder() instanceof PaginatedGui) {
             PaginatedGui gui = (PaginatedGui) event.getInventory().getHolder();
-            if (event.getRawSlot() == 45) gui.previous();
-            if (event.getRawSlot() == 53) gui.next();
+            if (event.getRawSlot() == 45) Bukkit.getScheduler().runTask(Main.getInstance(), gui::previous);
+            if (event.getRawSlot() == 53) Bukkit.getScheduler().runTask(Main.getInstance(), gui::next);
         }
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)
     public void onInventoryDrag(InventoryDragEvent event) {
         if (!isShopTitle(event.getView().getTitle())) return;
         event.setCancelled(true);
+        Bukkit.getScheduler().runTask(Main.getInstance(), () -> ((Player) event.getWhoClicked()).updateInventory());
+    }
+
+    private boolean isCategoryTitle(String title) {
+        String strippedTitle = stripTitle(title);
+        String strippedCategoryTitle = stripTitle(StringUtil.colorize(Lang.SHOP_GUI_TITLE + " - Kategorier"));
+        return strippedTitle != null && strippedTitle.equals(strippedCategoryTitle);
     }
 
     private boolean isShopTitle(String title) {
-        return title != null && title.startsWith(StringUtil.colorize(Lang.SHOP_GUI_TITLE));
+        String strippedTitle = stripTitle(title);
+        String strippedShopTitle = stripTitle(StringUtil.colorize(Lang.SHOP_GUI_TITLE));
+        return strippedTitle != null && strippedShopTitle != null && strippedTitle.startsWith(strippedShopTitle);
+    }
+
+    private String stripTitle(String title) {
+        if (title == null) return null;
+        return ChatColor.stripColor(title);
     }
 }
