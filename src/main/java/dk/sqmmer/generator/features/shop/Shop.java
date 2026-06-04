@@ -59,44 +59,55 @@ public class Shop {
         openCategorySelector(handler, player);
     }
 
-    private static void openCategorySelector(ShopHandler handler, Player player) {
+    static void openCategorySelector(ShopHandler handler, Player player) {
         Gui gui = Gui.gui()
                 .title(Component.text(StringUtil.colorize(Lang.SHOP_GUI_TITLE + " - Kategorier")))
                 .rows(4)
                 .disableAllInteractions()
                 .create();
+        cancelAllInteractions(gui);
 
         for (int stage = MIN_STAGE; stage <= MAX_STAGE; stage++) {
             int slot = STAGE_SLOTS[stage - MIN_STAGE];
             int stageNumber = stage;
             gui.setItem(slot, ItemBuilder.from(categoryItem(Material.BOOK, "&b&lStadie " + stageNumber,
                     "&7Klik for at se generatorer", "&7fra stadie &f" + stageNumber + "&7."))
-                    .asGuiItem(event -> openGenerators(handler, player, stageNumber)));
+                    .asGuiItem(event -> {
+                        event.setCancelled(true);
+                        openGenerators(handler, player, stageNumber);
+                    }));
         }
 
         gui.setItem(SPECIAL_SLOT, ItemBuilder.from(categoryItem(Material.NETHER_STAR, "&d&lSpecial",
                 "&7Generatorer som købes", "&7via &f/buy&7."))
-                .asGuiItem(event -> openSpecialGenerators(handler, player)));
+                .asGuiItem(event -> {
+                    event.setCancelled(true);
+                    openSpecialGenerators(handler, player);
+                }));
 
         gui.open(player);
     }
 
-    private static void openGenerators(ShopHandler handler, Player player, int stage) {
+    static void openGenerators(ShopHandler handler, Player player, int stage) {
         PaginatedGui gui = createGeneratorGui(Lang.SHOP_GUI_TITLE + " - Stadie " + stage);
 
         for (ShopItem shopItem : getShopItems(handler, stage, false)) {
-            gui.addItem(ItemBuilder.from(createGeneratorShopItem(shopItem)).asGuiItem(event -> buyGenerator(player, shopItem)));
+            gui.addItem(ItemBuilder.from(createGeneratorShopItem(shopItem)).asGuiItem(event -> {
+                event.setCancelled(true);
+                buyGenerator(player, shopItem);
+            }));
         }
 
         addNavigation(handler, player, gui);
         gui.open(player);
     }
 
-    private static void openSpecialGenerators(ShopHandler handler, Player player) {
+    static void openSpecialGenerators(ShopHandler handler, Player player) {
         PaginatedGui gui = createGeneratorGui(Lang.SHOP_GUI_TITLE + " - Special");
 
         for (ShopItem shopItem : getShopItems(handler, 0, true)) {
             gui.addItem(ItemBuilder.from(createSpecialShopItem(shopItem)).asGuiItem(event -> {
+                event.setCancelled(true);
                 player.closeInventory();
                 player.performCommand("buy");
             }));
@@ -106,18 +117,53 @@ public class Shop {
         gui.open(player);
     }
 
+
+    static int getStageFromSlot(int slot) {
+        for (int i = 0; i < STAGE_SLOTS.length; i++) {
+            if (STAGE_SLOTS[i] == slot) return MIN_STAGE + i;
+        }
+        return -1;
+    }
+
     private static PaginatedGui createGeneratorGui(String title) {
-        return Gui.paginated()
+        PaginatedGui gui = Gui.paginated()
                 .title(Component.text(StringUtil.colorize(title)))
                 .rows(6)
                 .disableAllInteractions()
                 .create();
+        cancelAllInteractions(gui);
+        return gui;
     }
 
     private static void addNavigation(ShopHandler handler, Player player, PaginatedGui gui) {
-        gui.setItem(45, ItemBuilder.from(navigationItem(Material.ARROW, "&eForrige side")).asGuiItem(event -> gui.previous()));
-        gui.setItem(49, ItemBuilder.from(navigationItem(Material.BARRIER, "&cTilbage til kategorier")).asGuiItem(event -> openCategorySelector(handler, player)));
-        gui.setItem(53, ItemBuilder.from(navigationItem(Material.ARROW, "&eNæste side")).asGuiItem(event -> gui.next()));
+        gui.setItem(45, ItemBuilder.from(navigationItem(Material.ARROW, "&eForrige side")).asGuiItem(event -> {
+            event.setCancelled(true);
+            gui.previous();
+        }));
+        gui.setItem(49, ItemBuilder.from(navigationItem(Material.BARRIER, "&cTilbage til kategorier")).asGuiItem(event -> {
+            event.setCancelled(true);
+            openCategorySelector(handler, player);
+        }));
+        gui.setItem(53, ItemBuilder.from(navigationItem(Material.ARROW, "&eNæste side")).asGuiItem(event -> {
+            event.setCancelled(true);
+            gui.next();
+        }));
+    }
+
+    private static void cancelAllInteractions(Gui gui) {
+        gui.setDefaultClickAction(event -> event.setCancelled(true));
+        gui.setDefaultTopClickAction(event -> event.setCancelled(true));
+        gui.setPlayerInventoryAction(event -> event.setCancelled(true));
+        gui.setOutsideClickAction(event -> event.setCancelled(true));
+        gui.setDragAction(event -> event.setCancelled(true));
+    }
+
+    private static void cancelAllInteractions(PaginatedGui gui) {
+        gui.setDefaultClickAction(event -> event.setCancelled(true));
+        gui.setDefaultTopClickAction(event -> event.setCancelled(true));
+        gui.setPlayerInventoryAction(event -> event.setCancelled(true));
+        gui.setOutsideClickAction(event -> event.setCancelled(true));
+        gui.setDragAction(event -> event.setCancelled(true));
     }
 
     private static void buyGenerator(Player player, ShopItem shopItem) {

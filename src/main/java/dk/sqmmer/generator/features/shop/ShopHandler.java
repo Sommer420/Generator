@@ -44,6 +44,7 @@ public class ShopHandler {
 
     public ShopHandler() {
         instance = this;
+        new ShopListener();
         load();
     }
 
