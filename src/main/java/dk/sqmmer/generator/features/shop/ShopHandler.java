@@ -24,12 +24,15 @@ package dk.sqmmer.generator.features.shop;
 
 import dk.sqmmer.generator.Main;
 import dk.sqmmer.generator.generators.objects.GeneratorType;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
 
 public class ShopHandler {
 
@@ -41,6 +44,7 @@ public class ShopHandler {
 
     public ShopHandler() {
         instance = this;
+        new ShopListener();
         load();
     }
 
@@ -62,14 +66,45 @@ public class ShopHandler {
 
         // Loads the file as a bukkit config
         this.shopConfig = YamlConfiguration.loadConfiguration(dataFile);
-        if (shopConfig.contains("gui-layout")) return;
-        int i = 0;
-        for (GeneratorType generatorType:Main.getInstance().getGeneratorHandler().getGeneratorTypes()) {
-            shopConfig.set("gui-layout."+i+".name", generatorType.getName());
-            shopConfig.set("gui-layout."+i+".price", 500 * (i+1));
-            i++;
-        }
+        syncGeneratorsToShopConfig();
         try {shopConfig.save(dataFile); } catch (IOException ignored) {}
+    }
+
+    private void syncGeneratorsToShopConfig() {
+        if (!shopConfig.contains("gui-layout")) shopConfig.createSection("gui-layout");
+
+        ConfigurationSection guiLayout = shopConfig.getConfigurationSection("gui-layout");
+        Set<String> configuredGenerators = new HashSet<>();
+        int highestSlot = -1;
+
+        for (String key : guiLayout.getKeys(false)) {
+            highestSlot = Math.max(highestSlot, getSlot(key));
+            String name = guiLayout.getString(key + ".name");
+            if (name == null || name.isEmpty()) continue;
+            configuredGenerators.add(name.toLowerCase());
+        }
+
+        int nextSlot = highestSlot + 1;
+        for (GeneratorType generatorType:Main.getInstance().getGeneratorHandler().getGeneratorTypes()) {
+            if (configuredGenerators.contains(generatorType.getName().toLowerCase())) continue;
+
+            shopConfig.set("gui-layout."+nextSlot+".name", generatorType.getName());
+            shopConfig.set("gui-layout."+nextSlot+".price", getDefaultPrice(generatorType, nextSlot));
+            nextSlot++;
+        }
+    }
+
+    private int getSlot(String key) {
+        try {
+            return Integer.parseInt(key);
+        } catch (NumberFormatException ignored) {
+            return -1;
+        }
+    }
+
+    private double getDefaultPrice(GeneratorType generatorType, int slot) {
+        if (generatorType.getUpgradePrice() > 0) return generatorType.getUpgradePrice();
+        return 500D * (slot + 1);
     }
 
 
