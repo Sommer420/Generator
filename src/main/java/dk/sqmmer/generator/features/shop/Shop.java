@@ -199,7 +199,7 @@ public class Shop {
 
             items.add(new ShopItem(getSlot(key), price, generatorType));
         }
-        items.sort(Comparator.comparingInt(ShopItem::getSlot).thenComparing(item -> item.getGeneratorType().getName(), String.CASE_INSENSITIVE_ORDER));
+        items.sort(Comparator.comparingDouble(ShopItem::getPrice).thenComparingInt(ShopItem::getSlot).thenComparing(item -> item.getGeneratorType().getName(), String.CASE_INSENSITIVE_ORDER));
         return items;
     }
 
@@ -229,84 +229,6 @@ public class Shop {
         itemMeta.setLore(lore);
         item.setItemMeta(itemMeta);
         return item;
-    }
-
-    private static ItemStack navigationItem(Material material, String name) {
-        ItemStack item = new ItemStack(material);
-        ItemMeta itemMeta = item.getItemMeta();
-        itemMeta.setDisplayName(StringUtil.colorize(name));
-        item.setItemMeta(itemMeta);
-        return item;
-    }
-
-    private static class ShopItem {
-        private final int slot;
-        private final double price;
-        private final GeneratorType generatorType;
-
-        private ShopItem(int slot, double price, GeneratorType generatorType) {
-            this.slot = slot;
-            this.price = price;
-            this.generatorType = generatorType;
-        }
-
-        public int getSlot() {
-            return slot;
-        }
-
-        public double getPrice() {
-            return price;
-        }
-
-        public GeneratorType getGeneratorType() {
-            return generatorType;
-        }
-    }
-
-    private static Set<Integer> getStages(ShopHandler handler) {
-        Set<Integer> stages = new TreeSet<>();
-        if (handler.getShopConfig().getConfigurationSection("gui-layout") == null) return stages;
-
-        for (String key : handler.getShopConfig().getConfigurationSection("gui-layout").getKeys(false)) {
-            ConfigurationSection section = handler.getShopConfig().getConfigurationSection("gui-layout." + key);
-            if (section == null || !section.contains("name")) continue;
-
-            GeneratorType generatorType = Main.getInstance().getGeneratorHandler().getGeneratorType(section.getString("name"));
-            if (generatorType == null) continue;
-
-            stages.add(generatorType.getStage());
-        }
-        return stages;
-    }
-
-    private static List<ShopItem> getShopItems(ShopHandler handler, int stage) {
-        List<ShopItem> items = new ArrayList<>();
-        ConfigurationSection guiLayout = handler.getShopConfig().getConfigurationSection("gui-layout");
-        if (guiLayout == null) return items;
-
-        for (String key : guiLayout.getKeys(false)) {
-            ConfigurationSection section = handler.getShopConfig().getConfigurationSection("gui-layout."+key);
-            if (section == null) continue;
-
-            String name = section.contains("name") ? section.getString("name") : "";
-            double price = section.contains("price") ? section.getDouble("price") : -1;
-            if (price == -1 || name.equals("")) continue;
-
-            GeneratorType generatorType = Main.getInstance().getGeneratorHandler().getGeneratorType(name);
-            if (generatorType == null || generatorType.getStage() != stage) continue;
-
-            items.add(new ShopItem(getSlot(key), price, generatorType));
-        }
-        items.sort(Comparator.comparingInt(ShopItem::getSlot).thenComparing(item -> item.getGeneratorType().getName(), String.CASE_INSENSITIVE_ORDER));
-        return items;
-    }
-
-    private static int getSlot(String key) {
-        try {
-            return Integer.parseInt(key);
-        } catch (NumberFormatException ignored) {
-            return 0;
-        }
     }
 
     private static ItemStack navigationItem(Material material, String name) {
