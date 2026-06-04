@@ -40,10 +40,12 @@ import dk.sqmmer.generator.playerdata.PlayerDataHandler;
 import dk.sqmmer.generator.utils.NumUtils;
 import dk.sqmmer.generator.utils.PlaceholderString;
 import dk.sqmmer.generator.utils.PlayerUtils;
+import dk.sqmmer.generator.utils.StringUtil;
 import org.bukkit.Material;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -247,9 +249,16 @@ public class GeneratorAdminCommand extends BaseCommand {
             return;
         }
 
+        ItemStack generatorItem = playerHeldItem.clone();
+        ItemMeta itemMeta = generatorItem.getItemMeta();
+        if (itemMeta != null) {
+            itemMeta.setDisplayName(StringUtil.colorize(name.replace("_", " ")));
+            generatorItem.setItemMeta(itemMeta);
+        }
+
         long timeBetween = Main.getInstance().getConfig().contains("time-inbetween") ? Main.getInstance().getConfig().getLong("time-inbetween") : 5000;
 
-        GeneratorType generatorType = new GeneratorType(name, playerHeldItem, new ArrayList<>(), nextGen, upgradePrice, stage, timeBetween);
+        GeneratorType generatorType = new GeneratorType(name, generatorItem, new ArrayList<>(), nextGen, upgradePrice, stage, timeBetween);
         Main.getInstance().getGeneratorHandler().addGeneratorType(generatorType);
 
         // Send Generator added message
