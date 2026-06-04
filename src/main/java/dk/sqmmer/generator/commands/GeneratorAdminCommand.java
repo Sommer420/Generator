@@ -55,7 +55,7 @@ import java.util.stream.Collectors;
 public class GeneratorAdminCommand extends BaseCommand {
 
     public GeneratorAdminCommand() {
-        super("generatoradmin", Arrays.asList( "generatora", "gadmin"));
+        super("generatoradmin", Arrays.asList("generatora", "gadmin", "ga"));
 
         Main.getInstance().getCommandWrapper().getTriumphCommandManager().registerSuggestion(SuggestionKey.of("gens"), (sender, context) -> {
             if (context.getArgs().size() < 1) {
@@ -71,7 +71,7 @@ public class GeneratorAdminCommand extends BaseCommand {
         PlayerUtils.sendMessage(sender, Lang.PREFIX + "&e/generatoradmin info &fGet information about the plugin.");
         PlayerUtils.sendMessage(sender, Lang.PREFIX + "&e/generatoradmin getgenerator <name> &fGet a generator!");
         PlayerUtils.sendMessage(sender, Lang.PREFIX + "&e/generatoradmin removegenerator <name> &fDelete/Remove a generator!");
-        PlayerUtils.sendMessage(sender, Lang.PREFIX + "&e/generatoradmin addgenerator <name> <upgrade price> <stadie> [next gen] &fAdd/Create a generator!");
+        PlayerUtils.sendMessage(sender, Lang.PREFIX + "&e/ga addgen <navn> <opgraderingspris> <stadie> [næste gen] &fAdd/Create a generator!");
         PlayerUtils.sendMessage(sender, Lang.PREFIX + "&e/generatoradmin addgendrop <generator name> <sell price> &fAdd a drop to a generator!");
         PlayerUtils.sendMessage(sender, Lang.PREFIX + "&e/generatoradmin removegendrop <generator name> <generator drop id> &fRemove a drop from a generator!");
     }
@@ -139,6 +139,7 @@ public class GeneratorAdminCommand extends BaseCommand {
         PlayerUtils.sendMessage(player, " §4* §cName §8- §e" + generatorType.getName());
         if (!(generatorType.getNextGeneratorName() == null || generatorType.getNextGeneratorName().isEmpty())) PlayerUtils.sendMessage(player, " §4* §cNext Gen §8- §e" + generatorType.getNextGeneratorName());
         PlayerUtils.sendMessage(player, " §4* §cUpgrade Price §8- §e" + NumUtils.formatNumber(generatorType.getUpgradePrice())+"$");
+        PlayerUtils.sendMessage(player, " §4* §cStadie §8- §e" + generatorType.getStage());
 
         if (generatorType.getGeneratorDrops().isEmpty()) return;
         PlayerUtils.sendMessage(player, " §4* §cGenerator Drops:");
@@ -188,6 +189,7 @@ public class GeneratorAdminCommand extends BaseCommand {
         // Get player inputs
         String name = args.get(0);
         double upgradePrice = 0;
+        int stage;
         String nextGen = args.size() > 3 ? args.get(3) : "";
 
         // Parse upgradePrice to double
@@ -196,6 +198,22 @@ public class GeneratorAdminCommand extends BaseCommand {
         } catch (NumberFormatException ex) {
             PlaceholderString errorMessage = new PlaceholderString(Lang.PREFIX + Lang.ERROR, "%ERROR%")
                     .placeholderValues(Lang.STRING_IS_NOT_NUMBER);
+            PlayerUtils.sendMessage(player, errorMessage);
+            return;
+        }
+
+        // Parse stage to integer
+        try {
+            stage = Integer.parseInt(args.get(2));
+        } catch (NumberFormatException ex) {
+            PlaceholderString errorMessage = new PlaceholderString(Lang.PREFIX + Lang.ERROR, "%ERROR%")
+                    .placeholderValues(Lang.STRING_IS_NOT_NUMBER);
+            PlayerUtils.sendMessage(player, errorMessage);
+            return;
+        }
+        if (stage < 1) {
+            PlaceholderString errorMessage = new PlaceholderString(Lang.PREFIX + Lang.ERROR, "%ERROR%")
+                    .placeholderValues("Stadie skal være 1 eller højere.");
             PlayerUtils.sendMessage(player, errorMessage);
             return;
         }
@@ -231,7 +249,7 @@ public class GeneratorAdminCommand extends BaseCommand {
 
         long timeBetween = Main.getInstance().getConfig().contains("time-inbetween") ? Main.getInstance().getConfig().getLong("time-inbetween") : 5000;
 
-        GeneratorType generatorType = new GeneratorType(name, playerHeldItem, new ArrayList<>(), nextGen, upgradePrice, timeBetween);
+        GeneratorType generatorType = new GeneratorType(name, playerHeldItem, new ArrayList<>(), nextGen, upgradePrice, stage, timeBetween);
         Main.getInstance().getGeneratorHandler().addGeneratorType(generatorType);
 
         // Send Generator added message

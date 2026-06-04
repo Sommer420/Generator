@@ -46,6 +46,7 @@ import org.bukkit.metadata.FixedMetadataValue;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.logging.Level;
 
@@ -112,12 +113,14 @@ public class GeneratorHandler {
                 }
             }
             double upgradePrice = generatorType.contains("upgrade-price") ? generatorType.getDouble("upgrade-price") : -1;
+            int stage = generatorType.contains("stage") ? generatorType.getInt("stage") : 1;
 
             long defaultTimeBetweenDrops = generatorType.contains("time-between") ? generatorType.getLong("time-between") : (Main.getInstance().getConfig().contains("time-inbetween") ? Main.getInstance().getConfig().getLong("time-inbetween") : 5000L);
 
             // Save Generator Type
-            generatorTypes.add(new GeneratorType(key, generatorItem, itemDrops, nextGenerator, upgradePrice, defaultTimeBetweenDrops));
+            generatorTypes.add(new GeneratorType(key, generatorItem, itemDrops, nextGenerator, upgradePrice, stage, defaultTimeBetweenDrops));
         }
+        generatorTypes.sort(Comparator.comparingInt(GeneratorType::getStage).thenComparing(GeneratorType::getName, String.CASE_INSENSITIVE_ORDER));
     }
 
     public GeneratorType getGeneratorType(String name) {
@@ -269,8 +272,9 @@ public class GeneratorHandler {
 
         if(!generatorType.getNextGeneratorName().isEmpty()) {
             config.set(generatorType.getName() + ".next-generator", generatorType.getNextGeneratorName());
-            config.set(generatorType.getName() + ".upgrade-price", generatorType.getUpgradePrice());
         }
+        config.set(generatorType.getName() + ".upgrade-price", generatorType.getUpgradePrice());
+        config.set(generatorType.getName() + ".stage", generatorType.getStage());
         ItemUtil.setConfigItem(generatorType.getName() + ".generator-item", config, generatorType.getGeneratorItem());
 
 

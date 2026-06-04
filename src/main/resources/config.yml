@@ -43,6 +43,7 @@ generators:
   coal:
     next-generator: 'iron'
     upgrade-price: 500
+    stage: 1
     generator-item:
       type: "173:0"
       name: "&b&lCoal &f&lGenerator"
@@ -61,6 +62,7 @@ generators:
   iron:
     next-generator: 'gold'
     upgrade-price: 5000
+    stage: 1
     generator-item:
       type: "42:0"
       name: "&b&lIron &f&lGenerator"
@@ -79,6 +81,7 @@ generators:
   gold:
     next-generator: 'diamond'
     upgrade-price: 10000
+    stage: 2
     generator-item:
       type: "41:0"
       name: "&b&lGold &f&lGenerator"
@@ -95,6 +98,8 @@ generators:
   # Diamond Generator #
   # ################# #
   diamond:
+    upgrade-price: -1
+    stage: 2
     generator-item:
       type: "57:0"
       name: "&b&lDiamond &f&lGenerator"
