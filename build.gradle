@@ -1,10 +1,9 @@
 plugins {
     id 'java'
     id 'com.github.johnrengelman.shadow' version '7.1.2'
-    id 'org.cadixdev.licenser' version '0.6.1'
 }
 
-group = 'dk.bondegaard'
+group = 'dk.sqmmer'
 version = '1.1.13'
 
 sourceCompatibility = '1.8'
@@ -39,21 +38,7 @@ dependencies {
     compileOnly 'org.spigotmc:spigot-api:1.12.2-R0.1-SNAPSHOT'
     compileOnly "com.github.MilkBowl:VaultAPI:1.7"
     compileOnly 'com.github.SkriptLang:Skript:2.5.3'
-    compileOnly 'me.clip:placeholderapi:2.11.2'
-}
-
-license {
-    header = project.file('LICENSE-HEADER.txt')
-    newLine = true
-    skipExistingHeaders = true
-    ignoreFailures = true
-
-    include '**/*.java'
-
-    properties {
-        name = 'bondegaard'
-        year = 2023
-    }
+    compileOnly 'me.clip:placeholderapi:2.11.6'
 }
 
 archivesBaseName = 'Generator'
@@ -61,8 +46,8 @@ archivesBaseName = 'Generator'
 shadowJar {
     archiveClassifier.set('')
 
-    relocate 'dev.triumphteam.gui', 'dk.bondegaard.gui'
-    relocate 'de.tr7zw', 'dk.bondegaard.item-nbt-api'
+    relocate 'dev.triumphteam.gui', 'dk.sqmmer.gui'
+    relocate 'de.tr7zw', 'dk.sqmmer.item-nbt-api'
 }
 
 build.finalizedBy shadowJar

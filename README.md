@@ -102,7 +102,7 @@ package com.example.plugin;
 
 import java.util.logging.Logger;
 
-import dk.bondegaard.generator.api.GeneratorAPI;
+import api.dk.sqmmer.generator.GeneratorAPI;
 
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
