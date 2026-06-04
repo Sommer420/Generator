@@ -49,98 +49,218 @@ import java.util.TreeSet;
 
 public class Shop {
 
+    private static final int MIN_STAGE = 1;
+    private static final int MAX_STAGE = 15;
+    private static final int[] STAGE_SLOTS = {10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 24, 25, 28};
+    private static final int SPECIAL_SLOT = 31;
 
     public static void open(ShopHandler handler, Player player) {
-        if (handler == null || handler.getShopConfig() == null || handler.getShopConfig().getConfigurationSection("gui-layout") == null) return;
-        openStageSelector(handler, player);
+        if (handler == null || handler.getShopConfig() == null) return;
+        openCategorySelector(handler, player);
     }
 
-    private static void openStageSelector(ShopHandler handler, Player player) {
+    private static void openCategorySelector(ShopHandler handler, Player player) {
         Gui gui = Gui.gui()
-                .title(Component.text(StringUtil.colorize(Lang.SHOP_GUI_TITLE + " - Vælg stadie")))
-                .rows(3)
+                .title(Component.text(StringUtil.colorize(Lang.SHOP_GUI_TITLE + " - Kategorier")))
+                .rows(4)
                 .disableAllInteractions()
                 .create();
 
-        int slot = 10;
-        for (Integer stage : getStages(handler)) {
-            if (slot == 17) slot = 19;
-            if (slot > 25) break;
-
-            ItemStack item = new ItemStack(Material.BOOK);
-            ItemMeta itemMeta = item.getItemMeta();
-            itemMeta.setDisplayName(StringUtil.colorize("&b&lStadie " + stage));
-            List<String> lore = new ArrayList<>();
-            lore.add(StringUtil.colorize("&7Klik for at se generatorer"));
-            lore.add(StringUtil.colorize("&7fra stadie &f" + stage + "&7."));
-            itemMeta.setLore(lore);
-            item.setItemMeta(itemMeta);
-
-            gui.setItem(slot, ItemBuilder.from(item).asGuiItem(event -> openGenerators(handler, player, stage)));
-            slot++;
+        for (int stage = MIN_STAGE; stage <= MAX_STAGE; stage++) {
+            int slot = STAGE_SLOTS[stage - MIN_STAGE];
+            int stageNumber = stage;
+            gui.setItem(slot, ItemBuilder.from(categoryItem(Material.BOOK, "&b&lStadie " + stageNumber,
+                    "&7Klik for at se generatorer", "&7fra stadie &f" + stageNumber + "&7."))
+                    .asGuiItem(event -> openGenerators(handler, player, stageNumber)));
         }
+
+        gui.setItem(SPECIAL_SLOT, ItemBuilder.from(categoryItem(Material.NETHER_STAR, "&d&lSpecial",
+                "&7Generatorer som købes", "&7via &f/buy&7."))
+                .asGuiItem(event -> openSpecialGenerators(handler, player)));
 
         gui.open(player);
     }
 
     private static void openGenerators(ShopHandler handler, Player player, int stage) {
-        PaginatedGui gui = Gui.paginated()
-                .title(Component.text(StringUtil.colorize(Lang.SHOP_GUI_TITLE + " - Stadie " + stage)))
-                .rows(6)
-                .disableAllInteractions()
-                .create();
+        PaginatedGui gui = createGeneratorGui(Lang.SHOP_GUI_TITLE + " - Stadie " + stage);
 
-        List<ShopItem> items = getShopItems(handler, stage);
-        for (ShopItem shopItem : items) {
-            GeneratorType generatorType = shopItem.getGeneratorType();
-            double price = shopItem.getPrice();
+        for (ShopItem shopItem : getShopItems(handler, stage, false)) {
+            gui.addItem(ItemBuilder.from(createGeneratorShopItem(shopItem)).asGuiItem(event -> buyGenerator(player, shopItem)));
+        }
 
-            // Add Text To Item
-            ItemStack item = generatorType.getGeneratorItem().clone();
-            ItemMeta itemMeta = item.getItemMeta();
-            List<String> lore = new ArrayList<>();
-            double sellValue = generatorType.getGeneratorDrops().isEmpty() ? 0 : generatorType.getGeneratorDrops().get(0).getSellPrice();
-            for (String s:Lang.SHOP_ITEM_LORE) {
-                PlaceholderString loreMessage = new PlaceholderString(StringUtil.colorize(s), "%PRICE%", "%TYPE%", "%VALUE%")
-                        .placeholderValues(NumUtils.formatNumber(price), generatorType.getName(), sellValue);
-                lore.add(loreMessage.parse());
-            }
-            itemMeta.setLore(lore);
-            item.setItemMeta(itemMeta);
+        addNavigation(handler, player, gui);
+        gui.open(player);
+    }
 
-            // Insert Items
-            gui.addItem(ItemBuilder.from(item).asGuiItem(event -> {
-                if (player.getInventory().firstEmpty() == -1) {
-                    PlayerUtils.sendMessage(player, Lang.PREFIX+ Lang.SHOP_FULL_INVENTORY);
-                    return;
-                }
-                Economy econ = Main.getInstance().getEconomy();
-                if (econ == null) {
-                    PlaceholderString errorMessage = new PlaceholderString(Lang.PREFIX + Lang.ERROR, "%ERROR%")
-                            .placeholderValues(Lang.NO_ECONOMY);
-                    PlayerUtils.sendMessage(player, errorMessage);
-                    return;
-                }
-                double playerBalance = econ.getBalance(player);
-                if (playerBalance-price < 0) {
-                    PlaceholderString shopFailMessage = new PlaceholderString(Lang.PREFIX + Lang.SHOP_BUY_FAIL, "%NEEDED%")
-                            .placeholderValues(NumUtils.formatNumber((price- playerBalance)));
-                    PlayerUtils.sendMessage(player, shopFailMessage);
-                    return;
-                }
-                econ.withdrawPlayer(player, price);
-                PlaceholderString shopSuccessMessage = new PlaceholderString(Lang.PREFIX + Lang.SHOP_BUY_SUCCESS, "%TYPE%", "%PRICE%")
-                        .placeholderValues(generatorType.getName(), NumUtils.formatNumber(price));
-                PlayerUtils.sendMessage(player, shopSuccessMessage);
-                Pickup.giveItem(player, generatorType.getGeneratorItem());
+    private static void openSpecialGenerators(ShopHandler handler, Player player) {
+        PaginatedGui gui = createGeneratorGui(Lang.SHOP_GUI_TITLE + " - Special");
 
+        for (ShopItem shopItem : getShopItems(handler, 0, true)) {
+            gui.addItem(ItemBuilder.from(createSpecialShopItem(shopItem)).asGuiItem(event -> {
+                player.closeInventory();
+                player.performCommand("buy");
             }));
         }
 
-        gui.setItem(45, ItemBuilder.from(navigationItem(Material.ARROW, "&eForrige side")).asGuiItem(event -> gui.previous()));
-        gui.setItem(49, ItemBuilder.from(navigationItem(Material.BARRIER, "&cTilbage til stadier")).asGuiItem(event -> openStageSelector(handler, player)));
-        gui.setItem(53, ItemBuilder.from(navigationItem(Material.ARROW, "&eNæste side")).asGuiItem(event -> gui.next()));
+        addNavigation(handler, player, gui);
         gui.open(player);
+    }
+
+    private static PaginatedGui createGeneratorGui(String title) {
+        return Gui.paginated()
+                .title(Component.text(StringUtil.colorize(title)))
+                .rows(6)
+                .disableAllInteractions()
+                .create();
+    }
+
+    private static void addNavigation(ShopHandler handler, Player player, PaginatedGui gui) {
+        gui.setItem(45, ItemBuilder.from(navigationItem(Material.ARROW, "&eForrige side")).asGuiItem(event -> gui.previous()));
+        gui.setItem(49, ItemBuilder.from(navigationItem(Material.BARRIER, "&cTilbage til kategorier")).asGuiItem(event -> openCategorySelector(handler, player)));
+        gui.setItem(53, ItemBuilder.from(navigationItem(Material.ARROW, "&eNæste side")).asGuiItem(event -> gui.next()));
+    }
+
+    private static void buyGenerator(Player player, ShopItem shopItem) {
+        if (player.getInventory().firstEmpty() == -1) {
+            PlayerUtils.sendMessage(player, Lang.PREFIX+ Lang.SHOP_FULL_INVENTORY);
+            return;
+        }
+        Economy econ = Main.getInstance().getEconomy();
+        if (econ == null) {
+            PlaceholderString errorMessage = new PlaceholderString(Lang.PREFIX + Lang.ERROR, "%ERROR%")
+                    .placeholderValues(Lang.NO_ECONOMY);
+            PlayerUtils.sendMessage(player, errorMessage);
+            return;
+        }
+        double playerBalance = econ.getBalance(player);
+        if (playerBalance-shopItem.getPrice() < 0) {
+            PlaceholderString shopFailMessage = new PlaceholderString(Lang.PREFIX + Lang.SHOP_BUY_FAIL, "%NEEDED%")
+                    .placeholderValues(NumUtils.formatNumber((shopItem.getPrice()- playerBalance)));
+            PlayerUtils.sendMessage(player, shopFailMessage);
+            return;
+        }
+        econ.withdrawPlayer(player, shopItem.getPrice());
+        PlaceholderString shopSuccessMessage = new PlaceholderString(Lang.PREFIX + Lang.SHOP_BUY_SUCCESS, "%TYPE%", "%PRICE%")
+                .placeholderValues(shopItem.getGeneratorType().getName(), NumUtils.formatNumber(shopItem.getPrice()));
+        PlayerUtils.sendMessage(player, shopSuccessMessage);
+        Pickup.giveItem(player, shopItem.getGeneratorType().getGeneratorItem());
+    }
+
+    private static ItemStack createGeneratorShopItem(ShopItem shopItem) {
+        GeneratorType generatorType = shopItem.getGeneratorType();
+        ItemStack item = generatorType.getGeneratorItem().clone();
+        ItemMeta itemMeta = item.getItemMeta();
+        if (itemMeta == null) return item;
+
+        List<String> lore = new ArrayList<>();
+        double sellValue = generatorType.getGeneratorDrops().isEmpty() ? 0 : generatorType.getGeneratorDrops().get(0).getSellPrice();
+        for (String s:Lang.SHOP_ITEM_LORE) {
+            PlaceholderString loreMessage = new PlaceholderString(StringUtil.colorize(s), "%PRICE%", "%TYPE%", "%VALUE%")
+                    .placeholderValues(NumUtils.formatNumber(shopItem.getPrice()), generatorType.getName(), sellValue);
+            lore.add(loreMessage.parse());
+        }
+        itemMeta.setLore(lore);
+        item.setItemMeta(itemMeta);
+        return item;
+    }
+
+    private static ItemStack createSpecialShopItem(ShopItem shopItem) {
+        ItemStack item = shopItem.getGeneratorType().getGeneratorItem().clone();
+        ItemMeta itemMeta = item.getItemMeta();
+        if (itemMeta == null) return item;
+
+        List<String> lore = new ArrayList<>();
+        lore.add(StringUtil.colorize("&7Denne generator købes via &f/buy&7."));
+        lore.add("");
+        lore.add(StringUtil.colorize("&d&nKlik for at åbne /buy!"));
+        itemMeta.setLore(lore);
+        item.setItemMeta(itemMeta);
+        return item;
+    }
+
+    private static List<ShopItem> getShopItems(ShopHandler handler, int stage, boolean special) {
+        List<ShopItem> items = new ArrayList<>();
+        ConfigurationSection guiLayout = handler.getShopConfig().getConfigurationSection("gui-layout");
+        if (guiLayout == null) return items;
+
+        for (String key : guiLayout.getKeys(false)) {
+            ConfigurationSection section = handler.getShopConfig().getConfigurationSection("gui-layout."+key);
+            if (section == null) continue;
+
+            String name = section.contains("name") ? section.getString("name") : "";
+            double price = section.contains("price") ? section.getDouble("price") : -1;
+            if (name.equals("")) continue;
+
+            GeneratorType generatorType = Main.getInstance().getGeneratorHandler().getGeneratorType(name);
+            if (generatorType == null) continue;
+            if (special != isSpecialShopItem(section, generatorType)) continue;
+            if (!special && generatorType.getStage() != stage) continue;
+            if (!special && price == -1) continue;
+
+            items.add(new ShopItem(getSlot(key), price, generatorType));
+        }
+        items.sort(Comparator.comparingInt(ShopItem::getSlot).thenComparing(item -> item.getGeneratorType().getName(), String.CASE_INSENSITIVE_ORDER));
+        return items;
+    }
+
+    private static boolean isSpecialShopItem(ConfigurationSection section, GeneratorType generatorType) {
+        if (section.getBoolean("special", false)) return true;
+        String category = section.contains("category") ? section.getString("category") : "";
+        if (category != null && category.equalsIgnoreCase("special")) return true;
+        return generatorType.getStage() < MIN_STAGE || generatorType.getStage() > MAX_STAGE;
+    }
+
+    private static int getSlot(String key) {
+        try {
+            return Integer.parseInt(key);
+        } catch (NumberFormatException ignored) {
+            return 0;
+        }
+    }
+
+    private static ItemStack categoryItem(Material material, String name, String... loreLines) {
+        ItemStack item = new ItemStack(material);
+        ItemMeta itemMeta = item.getItemMeta();
+        itemMeta.setDisplayName(StringUtil.colorize(name));
+        List<String> lore = new ArrayList<>();
+        for (String loreLine : loreLines) {
+            lore.add(StringUtil.colorize(loreLine));
+        }
+        itemMeta.setLore(lore);
+        item.setItemMeta(itemMeta);
+        return item;
+    }
+
+    private static ItemStack navigationItem(Material material, String name) {
+        ItemStack item = new ItemStack(material);
+        ItemMeta itemMeta = item.getItemMeta();
+        itemMeta.setDisplayName(StringUtil.colorize(name));
+        item.setItemMeta(itemMeta);
+        return item;
+    }
+
+    private static class ShopItem {
+        private final int slot;
+        private final double price;
+        private final GeneratorType generatorType;
+
+        private ShopItem(int slot, double price, GeneratorType generatorType) {
+            this.slot = slot;
+            this.price = price;
+            this.generatorType = generatorType;
+        }
+
+        public int getSlot() {
+            return slot;
+        }
+
+        public double getPrice() {
+            return price;
+        }
+
+        public GeneratorType getGeneratorType() {
+            return generatorType;
+        }
     }
 
     private static Set<Integer> getStages(ShopHandler handler) {
