@@ -33,7 +33,6 @@ import dk.sqmmer.generator.utils.NumUtils;
 import dk.sqmmer.generator.utils.PlaceholderString;
 import dk.sqmmer.generator.utils.PlayerUtils;
 import dk.sqmmer.generator.utils.StringUtil;
-import net.kyori.adventure.text.Component;
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
@@ -60,11 +59,8 @@ public class Shop {
     }
 
     static void openCategorySelector(ShopHandler handler, Player player) {
-        Gui gui = Gui.gui()
-                .title(Component.text(StringUtil.colorize(Lang.SHOP_GUI_TITLE + " - Kategorier")))
-                .rows(4)
-                .disableAllInteractions()
-                .create();
+        Gui gui = new Gui(4, StringUtil.colorize(Lang.SHOP_GUI_TITLE + " - Kategorier"));
+        gui.disableAllInteractions();
         cancelAllInteractions(gui);
 
         for (int stage = MIN_STAGE; stage <= MAX_STAGE; stage++) {
@@ -126,11 +122,8 @@ public class Shop {
     }
 
     private static PaginatedGui createGeneratorGui(String title) {
-        PaginatedGui gui = Gui.paginated()
-                .title(Component.text(StringUtil.colorize(title)))
-                .rows(6)
-                .disableAllInteractions()
-                .create();
+        PaginatedGui gui = new PaginatedGui(6, StringUtil.colorize(title));
+        gui.disableAllInteractions();
         cancelAllInteractions(gui);
         return gui;
     }
