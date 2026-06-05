@@ -77,8 +77,8 @@ public final class Main extends JavaPlugin {
         this.commandWrapper.loadMessages();
 
         // Load handlers
-        new PlayerDataHandler(this);
         this.generatorHandler = new GeneratorHandler();
+        new PlayerDataHandler(this);
 
         // Register Commands
         this.commandWrapper.register(new GeneratorAdminCommand());

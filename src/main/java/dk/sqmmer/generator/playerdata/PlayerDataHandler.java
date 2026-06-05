@@ -44,7 +44,7 @@ public class PlayerDataHandler implements Listener {
     public PlayerDataHandler(Main instance) {
         Bukkit.getPluginManager().registerEvents(this, instance);
         for (Player player : Bukkit.getOnlinePlayers()) {
-            if (loadPlayer(player)) return;
+            loadPlayer(player);
         }
     }
 

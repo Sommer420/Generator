@@ -53,8 +53,13 @@ public class GeneratorAPI {
         this.plugin = plugin;
 
         if (Bukkit.getPluginManager().getPlugin("Skript") != null) {
-            plugin.getLogger().info("Using integration: Skript");
-            new SkriptAPI(this);
+            try {
+                plugin.getLogger().info("Using integration: Skript");
+                new SkriptAPI(this);
+            } catch (RuntimeException ex) {
+                plugin.getLogger().warning("Could not load Skript integration. If you used PlugMan/reload, restart the server to enable Skript expressions.");
+                plugin.getLogger().warning("Generator will continue without Skript integration: " + ex.getMessage());
+            }
         }
         if (Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null) {
             plugin.getLogger().info("Using integration: PlaceholderAPI");
