@@ -63,8 +63,9 @@ public class GeneratorListener implements Listener {
         if (item == null || item.getType() == Material.AIR) return;
 
         for (GeneratorType generatorType : handler.getGeneratorTypes()) {
-            if (!generatorType.getGeneratorItem().isSimilar(item)) continue;
-            GPlayer gPlayer = PlayerDataHandler.getGPlayer(player);
+            ItemStack generatorItem = generatorType.getGeneratorItem();
+            if (generatorItem == null || !generatorItem.isSimilar(item)) continue;
+            GPlayer gPlayer = PlayerDataHandler.getOrCreateGPlayer(player);
             if (gPlayer.getMaxGens() <= gPlayer.getGenerators().size()) {
                 PlaceholderString genMaxMessage = new PlaceholderString(Lang.PREFIX + Lang.GENS_MAX, "%PLACED%","%MAX%", "%GENS_MAX%")
                         .placeholderValues(String.valueOf(gPlayer.getGenerators().size()), String.valueOf(gPlayer.getMaxGens()), String.valueOf(gPlayer.getMaxGens()));
@@ -96,6 +97,7 @@ public class GeneratorListener implements Listener {
     @EventHandler
     public void onGeneratorInteract(PlayerInteractEvent event) {
         if (!(event.getAction() == Action.LEFT_CLICK_BLOCK || event.getAction() == Action.RIGHT_CLICK_BLOCK)) return;
+        if (event.getClickedBlock() == null) return;
 
         if (!event.getClickedBlock().hasMetadata("generator")) return;
 
@@ -129,6 +131,7 @@ public class GeneratorListener implements Listener {
                 PlaceholderString errorMessage = new PlaceholderString(Lang.PREFIX + Lang.ERROR, "%ERROR%")
                         .placeholderValues(Lang.NO_ECONOMY);
                 PlayerUtils.sendMessage(event.getPlayer(), errorMessage);
+                return;
             }
 
             // Check player Balance
@@ -164,7 +167,7 @@ public class GeneratorListener implements Listener {
 
             event.getClickedBlock().setType(Material.AIR);
             handler.removeActiveGenerator(generator);
-            PlayerDataHandler.getGPlayer(player).removeGenerator(generator);
+            PlayerDataHandler.getOrCreateGPlayer(player).removeGenerator(generator);
             player.getInventory().addItem(generator.getGeneratorType().getGeneratorItem());
         }
     }
